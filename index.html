@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="A Generative Framework for Large-Scale Map Construction from Multi-modal Data">
+  <meta name="keywords" content="UniMapGen, Map Construction, Multi-modal Data">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UniMapGen: A Generative Framework for Large-Scale Map Construction from Multi-modal Data</title>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/favicon.svg">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">UniMapGen: A Generative Framework for Large-Scale Map Construction from Multi-modal Data</h1>
+          <div class="has-text-centered" style="font-size: 2rem; color: black;">
+            <b>🎉🎉AAAI2026 Oral🎉🎉</b>
+          </div>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://scholar.google.com/citations?user=FYwn1-YAAAAJ&hl=zh-CN">Yujian Yuan</a><sup>1,2*</sup>,</span>
+            <span class="author-block">
+              Changjie Wu<sup>1*</sup>,</span>
+            <span class="author-block">
+              <a href="https://scholar.google.com.hk/citations?user=5OnPBVYAAAAJ&hl=zh-CN">Xinyuan Chang</a><sup>1*</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://scholar.google.com/citations?user=VWWilSIAAAAJ&hl=zh-CN">Sijin Wang</a><sup>1*</sup>,
+            </span><br>
+            <span class="author-block">
+              Hang Zhang</a><sup>1</sup>,
+            </span>
+            <span class="author-block">
+              Shiyi Liang</a><sup>1,3</sup>,
+            </span>
+            <span class="author-block">
+              Shuang Zeng</a><sup>1,3</sup>
+            </span>
+            <span class="author-block">
+              Mu Xu</a><sup>1†</sup>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>Amap, Alibaba Group,</span> &nbsp;
+            <span class="author-block"><sup>2</sup>The Hong Kong University of Science and Technology</span><br>
+            <span class="author-block"><sup>3</sup>Xi’an Jiaotong University</span>
+          </div>
+          <div class="is-size-6 publication-authors">
+            <span class="author-block"><sup>*</sup>Equal contribution.</span> &nbsp;
+            <span class="author-block"><sup>†</sup>Corresponding author.</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/pdf/2509.22262"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://arxiv.org/pdf/2509.22262"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/amap-cvlab/UniMapGen"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <img id="teaser" src="./my_static/fig1.png" alt="Teaser image" />
+      <h2 class="subtitle has-text-centered">
+        Methods and challenges in large-scale map construction. <br>
+          (Top) Previous segmentation methods process image patches
+          separately, causing incomplete and discontinuous lines. 
+          <br>
+          (Bottom) UniMapGen uses flexible multi-modal inputs to construct
+          complete and continuous maps, overcoming satellite challenges including occlusion, outdateness, and incomplete annotation.</span>
+      </h2>
+    </div>
+  </div>
+</section>
+
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+          Large-scale map construction is foundational for critical applications such as autonomous driving and navigation systems. Traditional large-scale map construction approaches
+          mainly rely on costly and inefficient special data collection
+vehicles and labor-intensive annotation processes. 
+          </p>
+          <p>
+While existing satellite-based methods have demonstrated promising
+potential in enhancing the efficiency and coverage of map
+construction, they exhibit two major limitations: (1) inherent drawbacks of satellite data (e.g., occlusions, outdatedness) and (2) inefficient vectorization from perception-based
+methods, resulting in discontinuous and rough roads that require extensive post-processing. 
+</p>
+<p>
+This paper presents a novel
+generative framework, UniMapGen, for large-scale map construction, offering three key innovations: (1) representing lane
+lines as discrete sequence and establishing an iterative strategy to generate more complete and smooth map vectors than
+traditional perception-based methods. (2) proposing a flexible architecture that supports multi-modal inputs, enabling
+dynamic selection among BEV, PV, and text prompt, to overcome the drawbacks of satellite data. (3) developing a state
+update strategy for global continuity and consistency of the
+constructed large-scale map. UniMapGen achieves state-ofthe-art performance on the OpenSatMap dataset. Furthermore, UniMapGen can infer occluded roads and predict roads
+missing from dataset annotations. 
+</p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+
+    
+    <!--/ Paper video. -->
+  </div>
+</section>
+
+
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column">
+          <h2 class="title is-3">Method</h2>
+          <img src="./my_static/overview.png" alt="Method image" />
+          <p>
+            (a) Model Architecture: UniMapGen supports multi-modal data inputs, including BEV, PV, text, and
+maps. (b) Map Serialization: we apply equidistant sampling to the raw map vectors, and then reorder them in the specified
+order. Finally, they are converted into special tokens. (c) State Update: we propose a state update strategy to incrementally
+construct large-scale maps. This process requires no post-processing, yielding smooth and connected outputs.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column">
+          <h2 class="title is-3">Qualitative Results</h2>
+          <img src="./my_static/paper_example.png" alt="Qualitative Results image" />
+          <p>
+            Qualitative results of UniMapGen. (a) Comparison with SOTA. Different color refers to different line instances. (b)
+Ablation on State Update. The black lines are the patch edges. (c) BEV and PV map construction. PV provides up-to-date
+(purple) and complementary (red) road information. The line with purple circles is worn out or outdated in BEV image but
+clear in PV frames. (d) PV-based map construction. (e) Occluded road construction even without PV frames. (f) UniMapGen
+generates target maps given text prompts. (g) Global constructed map (missing intersection due to OpenSatMap annotation).
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column">
+          <h2 class="title is-3">Global Constructed Maps</h2>
+          <img src="./my_static/example1.png" alt="Qualitative Results image" />
+          <p>
+            Qualitative results of UniMapGen on the OpenSatMap dataset. UniMapGen create complete and continuous maps.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column">
+          <h2 class="title is-3">Main Results</h2>
+          <img src="./my_static/result.png" alt="Qualitative Results image" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@article{yuan2025unimapgen,
+      title={UniMapGen: A Generative Framework for Large-Scale Map Construction from Multi-modal Data},
+      author={Yuan, Yujian and Wu, Changjie and Chang, Xinyuan and Wang, Sijin and Zhang, Hang and Liang, Shiyi and Zeng, Shuang and Xu, Mu},
+      journal={arXiv preprint arXiv:2509.22262},
+      year={2025}
+    }</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            This means you are free to borrow the <a
+              href="https://github.com/nerfies/nerfies.github.io">source code</a> of this website,
+            we just ask that you link back to this page in the footer.
+            Please remember to remove the analytics code included in the header of the website which
+            you do not want on your website.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
