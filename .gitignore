@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Runtime artifacts
+outputs/
+results/
+visualizations/
+*.log
+
+# Model weights are distributed separately from Git.
+checkpoints/*
+!checkpoints/README.md
+*.bin
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/

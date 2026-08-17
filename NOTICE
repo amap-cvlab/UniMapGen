@@ -1,0 +1,7 @@
+UniMapGen
+Copyright 2026 UniMapGen Contributors
+
+This product includes software developed using the LLaMA-Factory, Qwen2-VL,
+vLLM, PyTorch, Transformers, TorchMetrics, OpenCV, SciPy, Shapely, and Pillow
+ecosystems. Those projects and any separately distributed model weights remain
+subject to their respective licenses and notices.
