@@ -1,33 +1,35 @@
 # UniMapGen
 
-UniMapGen 从卫星图像生成车道级矢量地图。模型把每个 `896×896` 图块编码为一组有向折线，支持 `Curb`、`Laneline` 和 `Virtualline` 三类，并通过左侧/上侧图块的连接点提示完成大图逐块拼接。
+[Chinese](README-ZH.md)
 
-本仓库是面向开源发布重新整理的独立工程，只包含数据预处理、推理、评测、可视化和小型示例数据
-## 目录
+UniMapGen generates lane-level vector maps from satellite imagery. The model encodes each `896×896` tile as a set of directed polylines, supports the `Curb`, `Laneline`, and `Virtualline` classes, and stitches large maps tile by tile using connection-point hints from the left and upper neighbors.
+
+This repository is a standalone project reorganized for open-source release. It contains data preprocessing, inference, evaluation, visualization, and a small example dataset.
+
+## Repository layout
 
 ```text
 .
-├── checkpoints/                 # 权重放置说明，权重本身被 .gitignore 排除
-├── data/example/                # 示例图块、真实预测和验证指标
-├── docs/                        # 验证报告和示例可视化
+├── checkpoints/                 # Checkpoint placement; weights are excluded by .gitignore
+├── data/example/                # Example tiles, real predictions, and validation metrics
+├── docs/                        # Validation report and example visualization
 ├── scripts/
-│   ├── preprocess.py            # 4096 大图与折线标注 → 图块 JSONL
-│   ├── infer.py                 # vLLM 推理与全局拼接
-│   ├── evaluate.py              # mIoU、mask AP、Chamfer AP
-│   ├── visualize.py             # 卫星图/GT/预测三联图
-│   ├── run_tests.py             # 无 pytest 时的轻量测试入口
-├── src/unimapgen/               # 可复用 Python 包
-└── tests/                       # 格式、裁剪、拼接和指标测试
+│   ├── preprocess.py            # 4096×4096 images and polyline annotations → tile JSONL
+│   ├── infer.py                 # vLLM inference and global stitching
+│   ├── evaluate.py              # mIoU, mask AP, and Chamfer AP
+│   ├── visualize.py             # Satellite/GT/prediction comparison panels
+│   └── run_tests.py             # Lightweight test runner when pytest is unavailable
+├── src/unimapgen/               # Reusable Python package
+└── tests/                       # Codec, clipping, stitching, and metric tests
 ```
 
-## 1. 安装环境
-
+## 1. Install the environment
 
 ```bash
 conda create -n unimapgen python=3.10 -y
 conda activate unimapgen
 
-# 先安装 CUDA 12.4 版 PyTorch，确保后续扩展能找到 torch。
+# Install the CUDA 12.4 build of PyTorch first so later extensions can find torch.
 pip install torch==2.4.0 torchvision==0.19.0 \
   --index-url https://download.pytorch.org/whl/cu124
 
@@ -36,11 +38,11 @@ pip install flash-attn==2.6.1 --no-build-isolation
 pip install -e . --no-deps
 ```
 
-若只运行预处理、mIoU、Chamfer AP 和可视化，可不安装 `vllm`、`flash-attn`、`torchmetrics` 与 `pycocotools`。
+If you only need preprocessing, mIoU, Chamfer AP, and visualization, you may omit `vllm`, `flash-attn`, `torchmetrics`, and `pycocotools`.
 
-## 2. 准备 checkpoint
+## 2. Prepare the checkpoint
 
-下载地址 comming soon
+Download link: coming soon.
 
 ```text
 checkpoints/unimapgen-v6/
@@ -53,11 +55,11 @@ checkpoints/unimapgen-v6/
 └── model.safetensors.index.json
 ```
 
-## 3. 数据预处理
+## 3. Preprocess the data
 
-### 输入格式
+### Input format
 
-每张原图通常为 `4096×4096`。标注可以是一个 JSON 映射、JSONL 文件，或每图一个 JSON 的目录。单条折线至少包含：
+Each source image is typically `4096×4096`. Annotations may be provided as a JSON mapping, a JSONL file, or a directory containing one JSON file per image. Each polyline must contain at least:
 
 ```json
 {
@@ -66,9 +68,9 @@ checkpoints/unimapgen-v6/
 }
 ```
 
-类别名接受 `Lane line`、`Virtual line`、`Curb`，输出统一为 `Laneline`、`Virtualline`、`Curb`。
+Accepted category names are `Lane line`, `Virtual line`, and `Curb`. They are normalized to `Laneline`, `Virtualline`, and `Curb` in the output.
 
-JSON 映射示例：
+Example JSON mapping:
 
 ```json
 {
@@ -78,7 +80,7 @@ JSON 映射示例：
 }
 ```
 
-### 运行
+### Run preprocessing
 
 ```bash
 python scripts/preprocess.py \
@@ -90,7 +92,7 @@ python scripts/preprocess.py \
   --sample-distance 40
 ```
 
-脚本会裁剪折线、标记 `<cut_point>`/`</cut_point>`、每 40 像素均匀采样、按起点距左上角由近到远排序，并生成：
+The script clips polylines to each tile, marks `<cut_point>` and `</cut_point>` endpoints, samples points uniformly every 40 pixels, orders lanes from near to far according to the distance between their starting point and the upper-left corner, and writes:
 
 ```text
 data/processed/
@@ -98,10 +100,9 @@ data/processed/
 └── samples.jsonl
 ```
 
-默认不补齐 `4096` 无法被 `896` 整除后剩余的边缘。若希望覆盖完整图像，增加 `--cover-edge`；这会产生一个重叠的末端窗口。
+By default, the script does not cover the remainder when `4096` is not divisible by `896`. Add `--cover-edge` to cover the full image with an overlapping final window.
 
-
-## 5. 推理
+## 4. Run inference
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python scripts/infer.py \
@@ -114,19 +115,19 @@ CUDA_VISIBLE_DEVICES=0 python scripts/infer.py \
   --max-tokens 16000
 ```
 
-重要行为：
+Important behavior:
 
-- 图块会按“同一大图内从左到右、从上到下”排序。
-- 当前图块会读取已经生成的左侧和上侧预测，把边界连接点写入提示。
-- checkpoint 的 chat template 保存在 tokenizer 配置中；脚本通过 tokenizer 渲染 Qwen2-VL 图像占位符，兼容该环境下 processor 不继承模板的情况。
-- `--include-text-prompt` 会把中文连接提示也写进 chat template，适合做消融，但不属于原始 v6 验证设置。
-- 中断后可加 `--resume`，脚本会从已有 JSONL 恢复邻居预测。
-- 每条输出保留 `hq_pred`、可解析的 token 概率、耗时和解析错误字段。
-- 若 Qwen2-VL 配置把 `mrope_section` 写成 `rope_type=default`，脚本会在系统临时目录创建只含软链接的 checkpoint 视图，并把标记改为 vLLM 0.6.1 需要的 `mrope`；原权重和原配置不会被修改。
+- Tiles are sorted from left to right and then top to bottom within the same source map.
+- Each tile reads predictions already produced for its left and upper neighbors and adds their boundary connection points to the prompt.
+- The checkpoint stores its chat template in the tokenizer configuration. The script renders the Qwen2-VL image placeholder through the tokenizer, which is compatible with environments where the processor does not inherit that template.
+- `--include-text-prompt` adds the Chinese neighbor-stitching text to the chat template. This is useful for ablation studies but is not part of the original v6 validation setting.
+- Add `--resume` after an interruption to restore neighbor predictions from an existing JSONL file.
+- Each output record contains `hq_pred`, machine-readable token probabilities, latency, and a parse-error field.
+- If a Qwen2-VL configuration serializes `mrope_section` with `rope_type=default`, the script creates a temporary symlink-only checkpoint view and changes the marker to the `mrope` value expected by vLLM 0.6.1. The original configuration and weights are not modified.
 
-## 6. 评测
+## 5. Evaluate predictions
 
-一次计算交接文档列出的三套指标：
+Compute all three metrics listed in the project handoff:
 
 ```bash
 python scripts/evaluate.py \
@@ -135,13 +136,13 @@ python scripts/evaluate.py \
   --output outputs/example_v6_metrics.json
 ```
 
-指标定义与原实验保持一致：
+The metric definitions match the original experiment:
 
-- `mIoU`：将折线按 6 像素线宽栅格化，统计三个前景类别；为复现实验，GT 背景像素不参与统计。
-- `mask AP`：把每条折线栅格化为实例 mask，以类别 token 概率作为置信度，报告 COCO 风格 mAP、AP50 和 AP75。
-- `Chamfer AP`：每条折线重采样 50 点，使用双向 Chamfer 距离，阈值为 `12/16/26/36` 像素。
+- `mIoU`: rasterizes polylines with a six-pixel line width and evaluates the three foreground classes. To reproduce the experiment, ground-truth background pixels are excluded.
+- `mask AP`: rasterizes each polyline as an instance mask, uses its category-token probability as confidence, and reports COCO-style mAP, AP50, and AP75.
+- `Chamfer AP`: resamples each polyline to 50 points, uses bidirectional Chamfer distance, and evaluates thresholds of `12/16/26/36` pixels.
 
-若只需轻量指标，可运行：
+For lightweight evaluation only:
 
 ```bash
 python scripts/evaluate.py \
@@ -149,7 +150,7 @@ python scripts/evaluate.py \
   --metrics miou,chamfer_ap
 ```
 
-## 7. 可视化
+## 6. Visualize predictions
 
 ```bash
 python scripts/visualize.py \
@@ -158,9 +159,8 @@ python scripts/visualize.py \
   --output-dir visualizations/example_v6
 ```
 
-每个输出为三联图：原卫星图、GT、预测。颜色固定为：红色 `Curb`、绿色 `Laneline`、橙蓝色 `Virtualline`；紫色和黄色圆点分别表示来自相邻图块的开始/结束连接提示。
+Each output is a three-panel comparison containing the original satellite image, ground truth, and prediction. Colors are fixed: red for `Curb`, green for `Laneline`, and orange-blue for `Virtualline`. Purple and yellow markers indicate start and end connection hints received from neighboring tiles.
 
+## License and acknowledgements
 
-## 许可证与致谢
-
-代码按 [Apache License 2.0](LICENSE) 发布。模型基于 Qwen2-VL，并沿用了 LLaMA-Factory 与 vLLM 的训练/推理生态；这些依赖和模型权重分别受其自身许可证约束。示例数据不改变原数据集的许可要求。
+The code is released under the [Apache License 2.0](LICENSE). The model is based on Qwen2-VL and uses the LLaMA-Factory and vLLM training and inference ecosystems. Those dependencies and the model weights remain subject to their respective licenses. Including example data does not alter the licensing terms of the original dataset.
