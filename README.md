@@ -42,6 +42,7 @@ hints from the left and upper neighbors.
 - [x] Data processing code
 - [x] UniMapGen package code
 - [ ] UniMapGen checkpoint download
+- [ ] UniMapGen training code
 
 ## Repository layout
 
