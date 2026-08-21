@@ -1,10 +1,47 @@
-# UniMapGen
+<div align="center">
+<a id="readme-top"></a>
+<h1>UniMapGen: A Generative Framework<br>for Large-Scale Map Construction<br>from Multi-modal Data</h1>
+<h3><strong>🎉🎉 AAAI 2026 Oral 🎉🎉</strong></h3>
+
+<a href="https://arxiv.org/pdf/2509.22262"><img src="https://img.shields.io/badge/arXiv-Paper-red?logo=arxiv&logoColor=white" alt="arXiv paper"></a>
+<a href="https://amap-cvlab.github.io/UniMapGen/"><img src="https://img.shields.io/badge/Project_Page-Website-green?logo=googlechrome&logoColor=white" alt="Project page"></a>
+
+[Yujian Yuan](https://scholar.google.com/citations?user=FYwn1-YAAAAJ&hl=zh-CN)<sup>1,2,\*</sup>,
+Changjie Wu<sup>1,\*</sup>,
+[Xinyuan Chang](https://scholar.google.com.hk/citations?user=5OnPBVYAAAAJ&hl=zh-CN)<sup>1,\*</sup>,
+Sijin Wang<sup>1,\*</sup>,
+Hang Zhang<sup>1</sup>,
+Shiyi Liang<sup>1,3</sup>,
+Shuang Zeng<sup>1,3</sup>,
+Mu Xu<sup>1,†</sup>
+
+<sup>1</sup>Amap, Alibaba Group,
+<sup>2</sup>The Hong Kong University of Science and Technology,<br>
+<sup>3</sup>Xi'an Jiaotong University
+
+<sup>\*Equal contribution; †Corresponding author</sup>
+
+**UniMapGen** is a generative unified framework that autoregressively generates
+**smooth and topologically consistent** vectorized maps from multi-modal inputs,
+enabling scalable, occlusion-robust city-scale mapping without costly on-site
+data collection.
+</div>
 
 [Chinese](README-ZH.md)
 
-UniMapGen generates lane-level vector maps from satellite imagery. The model encodes each `896×896` tile as a set of directed polylines, supports the `Curb`, `Laneline`, and `Virtualline` classes, and stitches large maps tile by tile using connection-point hints from the left and upper neighbors.
+This release provides a standalone satellite-image lane-map pipeline. It encodes
+each `896×896` tile as directed polylines in the `Curb`, `Laneline`, and
+`Virtualline` classes and stitches large maps tile by tile using connection-point
+hints from the left and upper neighbors.
 
-This repository is a standalone project reorganized for open-source release. It contains data preprocessing, inference, evaluation, visualization, and a small example dataset.
+## Release status
+
+- [x] Inference code
+- [x] Evaluation code
+- [x] Visualization code
+- [x] Data processing code
+- [x] UniMapGen package code
+- [ ] UniMapGen checkpoint download
 
 ## Repository layout
 
@@ -38,7 +75,8 @@ pip install flash-attn==2.6.1 --no-build-isolation
 pip install -e . --no-deps
 ```
 
-If you only need preprocessing, mIoU, Chamfer AP, and visualization, you may omit `vllm`, `flash-attn`, `torchmetrics`, and `pycocotools`.
+If you only need preprocessing, mIoU, Chamfer AP, and visualization, you may
+omit `vllm`, `flash-attn`, `torchmetrics`, and `pycocotools`.
 
 ## 2. Prepare the checkpoint
 
@@ -59,7 +97,9 @@ checkpoints/unimapgen-v6/
 
 ### Input format
 
-Each source image is typically `4096×4096`. Annotations may be provided as a JSON mapping, a JSONL file, or a directory containing one JSON file per image. Each polyline must contain at least:
+Each source image is typically `4096×4096`. Annotations may be provided as a
+JSON mapping, a JSONL file, or a directory containing one JSON file per image.
+Each polyline must contain at least:
 
 ```json
 {
@@ -68,7 +108,8 @@ Each source image is typically `4096×4096`. Annotations may be provided as a JS
 }
 ```
 
-Accepted category names are `Lane line`, `Virtual line`, and `Curb`. They are normalized to `Laneline`, `Virtualline`, and `Curb` in the output.
+Accepted category names are `Lane line`, `Virtual line`, and `Curb`. They are
+normalized to `Laneline`, `Virtualline`, and `Curb` in the output.
 
 Example JSON mapping:
 
@@ -92,7 +133,10 @@ python scripts/preprocess.py \
   --sample-distance 40
 ```
 
-The script clips polylines to each tile, marks `<cut_point>` and `</cut_point>` endpoints, samples points uniformly every 40 pixels, orders lanes from near to far according to the distance between their starting point and the upper-left corner, and writes:
+The script clips polylines to each tile, marks `<cut_point>` and
+`</cut_point>` endpoints, samples points uniformly every 40 pixels, and orders
+lanes from near to far according to the distance between their starting point
+and the upper-left corner. It writes:
 
 ```text
 data/processed/
@@ -100,7 +144,9 @@ data/processed/
 └── samples.jsonl
 ```
 
-By default, the script does not cover the remainder when `4096` is not divisible by `896`. Add `--cover-edge` to cover the full image with an overlapping final window.
+By default, the script does not cover the remainder when `4096` is not divisible
+by `896`. Add `--cover-edge` to cover the full image with an overlapping final
+window.
 
 ## 4. Run inference
 
@@ -117,13 +163,25 @@ CUDA_VISIBLE_DEVICES=0 python scripts/infer.py \
 
 Important behavior:
 
-- Tiles are sorted from left to right and then top to bottom within the same source map.
-- Each tile reads predictions already produced for its left and upper neighbors and adds their boundary connection points to the prompt.
-- The checkpoint stores its chat template in the tokenizer configuration. The script renders the Qwen2-VL image placeholder through the tokenizer, which is compatible with environments where the processor does not inherit that template.
-- `--include-text-prompt` adds the Chinese neighbor-stitching text to the chat template. This is useful for ablation studies but is not part of the original v6 validation setting.
-- Add `--resume` after an interruption to restore neighbor predictions from an existing JSONL file.
-- Each output record contains `hq_pred`, machine-readable token probabilities, latency, and a parse-error field.
-- If a Qwen2-VL configuration serializes `mrope_section` with `rope_type=default`, the script creates a temporary symlink-only checkpoint view and changes the marker to the `mrope` value expected by vLLM 0.6.1. The original configuration and weights are not modified.
+- Tiles are sorted from left to right and then top to bottom within the same
+  source map.
+- Each tile reads predictions already produced for its left and upper neighbors
+  and adds their boundary connection points to the prompt.
+- The checkpoint stores its chat template in the tokenizer configuration. The
+  script renders the Qwen2-VL image placeholder through the tokenizer, which is
+  compatible with environments where the processor does not inherit that
+  template.
+- `--include-text-prompt` adds the Chinese neighbor-stitching text to the chat
+  template. This is useful for ablation studies but is not part of the original
+  v6 validation setting.
+- Add `--resume` after an interruption to restore neighbor predictions from an
+  existing JSONL file.
+- Each output record contains `hq_pred`, machine-readable token probabilities,
+  latency, and a parse-error field.
+- If a Qwen2-VL configuration serializes `mrope_section` with
+  `rope_type=default`, the script creates a temporary symlink-only checkpoint
+  view and changes the marker to the `mrope` value expected by vLLM 0.6.1. The
+  original configuration and weights are not modified.
 
 ## 5. Evaluate predictions
 
@@ -138,9 +196,13 @@ python scripts/evaluate.py \
 
 The metric definitions match the original experiment:
 
-- `mIoU`: rasterizes polylines with a six-pixel line width and evaluates the three foreground classes. To reproduce the experiment, ground-truth background pixels are excluded.
-- `mask AP`: rasterizes each polyline as an instance mask, uses its category-token probability as confidence, and reports COCO-style mAP, AP50, and AP75.
-- `Chamfer AP`: resamples each polyline to 50 points, uses bidirectional Chamfer distance, and evaluates thresholds of `12/16/26/36` pixels.
+- `mIoU`: rasterizes polylines with a six-pixel line width and evaluates the
+  three foreground classes. To reproduce the experiment, ground-truth
+  background pixels are excluded.
+- `mask AP`: rasterizes each polyline as an instance mask, uses its category
+  token probability as confidence, and reports COCO-style mAP, AP50, and AP75.
+- `Chamfer AP`: resamples each polyline to 50 points, uses bidirectional Chamfer
+  distance, and evaluates thresholds of `12/16/26/36` pixels.
 
 For lightweight evaluation only:
 
@@ -159,8 +221,36 @@ python scripts/visualize.py \
   --output-dir visualizations/example_v6
 ```
 
-Each output is a three-panel comparison containing the original satellite image, ground truth, and prediction. Colors are fixed: red for `Curb`, green for `Laneline`, and orange-blue for `Virtualline`. Purple and yellow markers indicate start and end connection hints received from neighboring tiles.
+Each output is a three-panel comparison containing the original satellite
+image, ground truth, and prediction. Colors are fixed: red for `Curb`, green for
+`Laneline`, and orange-blue for `Virtualline`. Purple and yellow markers indicate
+start and end connection hints received from neighboring tiles.
 
-## License and acknowledgements
+## Citation
 
-The code is released under the [Apache License 2.0](LICENSE). The model is based on Qwen2-VL and uses the LLaMA-Factory and vLLM training and inference ecosystems. Those dependencies and the model weights remain subject to their respective licenses. Including example data does not alter the licensing terms of the original dataset.
+If UniMapGen is useful in your research or applications, please consider giving
+the project a star and citing it with the following BibTeX entry:
+
+```bibtex
+@article{yuan2025unimapgen,
+  title={UniMapGen: A Generative Framework for Large-Scale Map Construction from Multi-modal Data},
+  author={Yuan, Yujian and Wu, Changjie and Chang, Xinyuan and Wang, Sijin and Zhang, Hang and Liang, Shiyi and Zeng, Shuang and Xu, Mu},
+  journal={arXiv preprint arXiv:2509.22262},
+  year={2025}
+}
+```
+
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/back%20to%20top-red?style=flat" alt="Back to top"></a></p>
+
+## Acknowledgements
+
+Our work is primarily based on
+[LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory), and the dataset comes
+from [OpenSatMap](https://github.com/bjzhb666/OpenSatMap-offical). We sincerely
+thank the authors for their work.
+
+The code is released under the [Apache License 2.0](LICENSE). The dependencies
+and model weights remain subject to their respective licenses. Including example
+data does not alter the licensing terms of the original dataset.
+
+<p align="right"><a href="#readme-top"><img src="https://img.shields.io/badge/back%20to%20top-red?style=flat" alt="Back to top"></a></p>
