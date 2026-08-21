@@ -2,33 +2,26 @@
 
 UniMapGen 从卫星图像生成车道级矢量地图。模型把每个 `896×896` 图块编码为一组有向折线，支持 `Curb`、`Laneline` 和 `Virtualline` 三类，并通过左侧/上侧图块的连接点提示完成大图逐块拼接。
 
-本仓库是面向开源发布重新整理的独立工程，只包含数据预处理、推理、评测、可视化和小型示例数据，不依赖原始内部工程。训练数据和模型权重不提交到 Git；请按下文放置已获授权的 v6 checkpoint。
-
-指定最终 v6 权重 `0502_v6_opensatmap20_896/checkpoint-26000` 已在 A100 上完成 6 图块真实推理验证；结果、指标和一张拼接可视化见 [`docs/validation.md`](docs/validation.md)。
-
-![UniMapGen v6 prediction comparison](docs/validation_checkpoint26000.jpg)
-
+本仓库是面向开源发布重新整理的独立工程，只包含数据预处理、推理、评测、可视化和小型示例数据
 ## 目录
 
 ```text
 .
 ├── checkpoints/                 # 权重放置说明，权重本身被 .gitignore 排除
 ├── data/example/                # 示例图块、真实预测和验证指标
-├── docs/                        # checkpoint-26000 验证报告和示例可视化
+├── docs/                        # 验证报告和示例可视化
 ├── scripts/
 │   ├── preprocess.py            # 4096 大图与折线标注 → 图块 JSONL
 │   ├── infer.py                 # vLLM 推理与全局拼接
 │   ├── evaluate.py              # mIoU、mask AP、Chamfer AP
 │   ├── visualize.py             # 卫星图/GT/预测三联图
 │   ├── run_tests.py             # 无 pytest 时的轻量测试入口
-│   └── check_release.py         # GitHub 发布前隐私与大文件检查
 ├── src/unimapgen/               # 可复用 Python 包
 └── tests/                       # 格式、裁剪、拼接和指标测试
 ```
 
 ## 1. 安装环境
 
-已验证的软件基线为 Linux、Python 3.10、CUDA 12.4、PyTorch 2.4.0 和 vLLM 0.6.1。真实 checkpoint 推理需要 NVIDIA GPU；A100 80GB 可直接以单卡运行。
 
 ```bash
 conda create -n unimapgen python=3.10 -y
@@ -47,7 +40,7 @@ pip install -e . --no-deps
 
 ## 2. 准备 checkpoint
 
-交接记录中的主实验为 v6（全局拼接 + 顺序规整）。本工程指定 `0502_v6_opensatmap20_896/checkpoint-26000` 为最终推理权重。用于推理的模型分片约 6GB，不能直接放入普通 GitHub 仓库；发布时建议上传到 GitHub Release、Hugging Face 或其他模型存储，再解压为：
+下载地址 comming soon
 
 ```text
 checkpoints/unimapgen-v6/
@@ -58,13 +51,6 @@ checkpoints/unimapgen-v6/
 ├── model-00001-of-00002.safetensors
 ├── model-00002-of-00002.safetensors
 └── model.safetensors.index.json
-```
-
-检查关键文件：
-
-```bash
-test -f checkpoints/unimapgen-v6/config.json
-test -f checkpoints/unimapgen-v6/model.safetensors.index.json
 ```
 
 ## 3. 数据预处理
@@ -112,24 +98,10 @@ data/processed/
 └── samples.jsonl
 ```
 
-为严格复现 v6，默认不补齐 `4096` 无法被 `896` 整除后剩余的边缘。若希望覆盖完整图像，增加 `--cover-edge`；这会产生一个重叠的末端窗口，属于不同于原始 v6 的推理设置。
+默认不补齐 `4096` 无法被 `896` 整除后剩余的边缘。若希望覆盖完整图像，增加 `--cover-edge`；这会产生一个重叠的末端窗口。
 
-## 4. 先跑无模型 smoke test
 
-`--dry-run` 会把 GT 复制成预测，用于验证数据读取、连接点提示、评测和可视化链路，不会加载 GPU 模型：
-
-```bash
-python scripts/infer.py \
-  --dry-run \
-  --input-file data/example/samples.jsonl \
-  --image-root data/example/images \
-  --blank-image data/example/empty_img_896.jpg \
-  --output-file outputs/example_dry_run.jsonl
-```
-
-预期摘要：`requested=6`、`succeeded=6`、`failed=0`。
-
-## 5. 使用 v6 checkpoint 推理
+## 5. 推理
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python scripts/infer.py \
@@ -146,7 +118,6 @@ CUDA_VISIBLE_DEVICES=0 python scripts/infer.py \
 
 - 图块会按“同一大图内从左到右、从上到下”排序。
 - 当前图块会读取已经生成的左侧和上侧预测，把边界连接点写入提示。
-- 为兼容原 v6 验证，默认保留“chat template 只含图像、三图输入为卫星图 + 两张黑图”的旧输入布局。
 - checkpoint 的 chat template 保存在 tokenizer 配置中；脚本通过 tokenizer 渲染 Qwen2-VL 图像占位符，兼容该环境下 processor 不继承模板的情况。
 - `--include-text-prompt` 会把中文连接提示也写进 chat template，适合做消融，但不属于原始 v6 验证设置。
 - 中断后可加 `--resume`，脚本会从已有 JSONL 恢复邻居预测。
@@ -189,22 +160,6 @@ python scripts/visualize.py \
 
 每个输出为三联图：原卫星图、GT、预测。颜色固定为：红色 `Curb`、绿色 `Laneline`、橙蓝色 `Virtualline`；紫色和黄色圆点分别表示来自相邻图块的开始/结束连接提示。
 
-## 8. 测试与发布检查
-
-```bash
-pytest -q
-# 若运行环境未安装 pytest，测试本身也可用标准 Python 启动：
-python scripts/run_tests.py
-python scripts/check_release.py
-git status --short
-```
-
-发布检查会拒绝私有挂载路径、内网地址、硬编码凭据和模型权重。上传 GitHub 前还应确认：
-
-1. checkpoint 已放到单独的模型托管地址，并在 `checkpoints/README.md` 填写公开下载链接与 SHA256。
-2. 完整数据集的授权允许再分发；本仓库只附带 6 张演示图块。
-3. `outputs/`、`visualizations/` 和权重文件未被 Git 跟踪。
-4. 根据实际模型发布信息补充模型卡、作者列表和引用。
 
 ## 许可证与致谢
 
